@@ -22,7 +22,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import androidx.core.content.pm.ServiceInfoCompat
+import android.content.pm.ServiceInfo
 import com.peeratvoip.app.PeeratVoipApp
 import com.peeratvoip.app.R
 import com.peeratvoip.app.audio.VoiceEngineHolder
@@ -88,7 +88,7 @@ class FloatingControlService : Service() {
                 this,
                 NOTIFICATION_ID,
                 buildNotification(),
-                ServiceInfoCompat.FOREGROUND_SERVICE_TYPE_MICROPHONE,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
             )
         }
 

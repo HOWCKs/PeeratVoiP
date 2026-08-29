@@ -1,6 +1,7 @@
 package com.peeratvoip.app.ui.components
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -21,7 +22,7 @@ fun NeuCard(
     elevation: androidx.compose.ui.unit.Dp = 10.dp,
     contentPadding: androidx.compose.ui.unit.Dp = 20.dp,
     style: NeuStyle = NeuStyle.RAISED,
-    content: @Composable Box.() -> Unit,
+    content: @Composable BoxScope.() -> Unit,
 ) {
     val palette = LocalNeuPalette.current
     Box(

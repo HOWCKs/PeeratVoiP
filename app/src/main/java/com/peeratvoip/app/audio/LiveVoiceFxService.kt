@@ -8,7 +8,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
-import androidx.core.content.pm.ServiceInfoCompat
+import android.content.pm.ServiceInfo
 import com.peeratvoip.app.MainActivity
 import com.peeratvoip.app.PeeratVoipApp
 import com.peeratvoip.app.R
@@ -83,7 +83,7 @@ class LiveVoiceFxService : Service() {
                 this,
                 NOTIFICATION_ID,
                 buildNotification(),
-                ServiceInfoCompat.FOREGROUND_SERVICE_TYPE_MICROPHONE,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
             )
         }
         return START_STICKY
