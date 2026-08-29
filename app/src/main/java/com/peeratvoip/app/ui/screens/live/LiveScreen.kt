@@ -23,9 +23,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -124,14 +124,14 @@ fun LiveScreen(
                         text = "Ver todas ›",
                         style = MaterialTheme.typography.labelLarge,
                         color = palette.accent,
-                        modifier = Modifier.clickableText(onOpenPresets),
+                        modifier = Modifier.clickable(onClick = onOpenPresets),
                     )
                 }
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     items(VoicePreset.builtIns) { preset ->
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.clickableText { viewModel.selectPreset(preset) },
+                            modifier = Modifier.clickable(onClick = { viewModel.selectPreset(preset) }),
                         ) {
                             NeuIconBadge(
                                 icon = Icons.Filled.GraphicEq,
@@ -209,14 +209,6 @@ private fun LabeledSlider(
         Spacer(Modifier.height(8.dp))
         NeuSlider(value = value, onValueChange = onChange, valueRange = range)
     }
-}
-
-private fun Modifier.clickableText(onClick: () -> Unit): Modifier = this.composed {
-    androidx.compose.foundation.clickable(
-        interactionSource = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-        indication = null,
-        onClick = onClick,
-    )
 }
 
 @Preview(showBackground = true)
