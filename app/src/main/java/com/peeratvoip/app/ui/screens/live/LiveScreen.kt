@@ -20,12 +20,14 @@ import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -48,6 +50,22 @@ fun LiveScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val palette = LocalNeuPalette.current
+    val context = LocalContext.current
+
+    // Keep the mic pipeline alive in the background (and show notification
+    // quick-controls) whenever the live effect is running. Also pop the floating
+    // overlay bubble automatically so the voice can be changed over other apps.
+    LaunchedEffect(state.isRunning) {
+        if (state.isRunning) {
+            com.peeratvoip.app.audio.LiveVoiceFxService.start(context)
+            if (com.peeratvoip.app.overlay.FloatingControlService.canDrawOverlays(context)) {
+                com.peeratvoip.app.overlay.FloatingControlService.show(context)
+            }
+        } else {
+            com.peeratvoip.app.audio.LiveVoiceFxService.stop(context)
+            com.peeratvoip.app.overlay.FloatingControlService.hide(context)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -124,14 +142,14 @@ fun LiveScreen(
                         text = "Ver todas ›",
                         style = MaterialTheme.typography.labelLarge,
                         color = palette.accent,
-                        modifier = Modifier.clickableText(onOpenPresets),
+                        modifier = Modifier.clickable(onClick = onOpenPresets),
                     )
                 }
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     items(VoicePreset.builtIns) { preset ->
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.clickableText { viewModel.selectPreset(preset) },
+                            modifier = Modifier.clickable { viewModel.selectPreset(preset) },
                         ) {
                             NeuIconBadge(
                                 icon = Icons.Filled.GraphicEq,
@@ -209,14 +227,6 @@ private fun LabeledSlider(
         Spacer(Modifier.height(8.dp))
         NeuSlider(value = value, onValueChange = onChange, valueRange = range)
     }
-}
-
-private fun Modifier.clickableText(onClick: () -> Unit): Modifier = this.composed {
-    androidx.compose.foundation.clickable(
-        interactionSource = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-        indication = null,
-        onClick = onClick,
-    )
 }
 
 @Preview(showBackground = true)
