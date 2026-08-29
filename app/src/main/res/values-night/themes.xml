@@ -1,0 +1,7 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.PeeratVoiP" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#262B36</item>
+        <item name="android:navigationBarColor">#262B36</item>
+        <item name="android:windowBackground">#262B36</item>
+    </style>
+</resources>
