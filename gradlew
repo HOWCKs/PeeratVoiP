@@ -249,25 +249,4 @@ eval "set -- $(
         tr '\n' ' '
     )" '"$@"'
 
-# --- PeeratVoiP CI diagnostics -------------------------------------------
-# Sandbox CI log downloads are network-blocked and the workflow file cannot be
-# edited from this environment, so on failure we echo the key compiler/build
-# error lines as GitHub Actions "::error::" annotations (readable via the
-# check-runs annotations API). Harmless locally. Remove once CI is green.
-if [ "${PEERATVOIP_CAPTURE:-1}" = "1" ]; then
-    _pv_log="$(mktemp 2>/dev/null || echo /tmp/pv_gradle.log)"
-    _pv_code=0
-    "$JAVACMD" "$@" > "$_pv_log" 2>&1 || _pv_code=$?
-    cat "$_pv_log"
-    if [ "$_pv_code" -ne 0 ]; then
-        grep -E "^e: |error: |Unresolved reference|None of the following|Type mismatch|FAILURE: |What went wrong|Caused by|> Task .* FAILED|cannot find symbol|Compilation error" "$_pv_log" \
-            | head -80 \
-            | while IFS= read -r _pv_line; do
-                printf '::error::%s\n' "$_pv_line"
-            done
-    fi
-    rm -f "$_pv_log"
-    exit "$_pv_code"
-fi
-
 exec "$JAVACMD" "$@"
