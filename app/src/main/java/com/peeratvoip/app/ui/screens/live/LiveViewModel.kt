@@ -2,7 +2,6 @@ package com.peeratvoip.app.ui.screens.live
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.peeratvoip.app.audio.LiveVoiceEngine
 import com.peeratvoip.app.audio.VoiceEngineHolder
 import com.peeratvoip.app.audio.VoicePreset
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,28 +19,52 @@ data class LiveUiState(
     val permissionDenied: Boolean = false,
 )
 
+/**
+ * Thin ViewModel over [VoiceEngineHolder]. All real state lives in the holder so
+ * the notification quick-controls and floating overlay stay perfectly in sync
+ * with whatever the on-screen UI shows.
+ */
 class LiveViewModel : ViewModel() {
-    private val engine: LiveVoiceEngine = VoiceEngineHolder.engine
 
     private val _uiState = MutableStateFlow(LiveUiState())
     val uiState: StateFlow<LiveUiState> = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch {
-            engine.isRunning.collect { running ->
+            VoiceEngineHolder.isRunning.collect { running ->
                 _uiState.value = _uiState.value.copy(isRunning = running)
             }
         }
         viewModelScope.launch {
-            engine.levelMeter.collect { level ->
+            VoiceEngineHolder.levelMeter.collect { level ->
                 _uiState.value = _uiState.value.copy(level = level)
+            }
+        }
+        viewModelScope.launch {
+            VoiceEngineHolder.preset.collect { preset ->
+                _uiState.value = _uiState.value.copy(selectedPreset = preset)
+            }
+        }
+        viewModelScope.launch {
+            VoiceEngineHolder.extraPitchSemitones.collect { v ->
+                _uiState.value = _uiState.value.copy(extraPitchSemitones = v)
+            }
+        }
+        viewModelScope.launch {
+            VoiceEngineHolder.wetDryMix.collect { v ->
+                _uiState.value = _uiState.value.copy(wetDryMix = v)
+            }
+        }
+        viewModelScope.launch {
+            VoiceEngineHolder.outputGain.collect { v ->
+                _uiState.value = _uiState.value.copy(outputGain = v)
             }
         }
     }
 
     fun toggleLive(hasPermission: Boolean, requestPermission: () -> Unit) {
-        if (_uiState.value.isRunning) {
-            engine.stop()
+        if (VoiceEngineHolder.isRunning.value) {
+            VoiceEngineHolder.stop()
         } else {
             if (!hasPermission) {
                 requestPermission()
@@ -49,32 +72,20 @@ class LiveViewModel : ViewModel() {
                 return
             }
             _uiState.value = _uiState.value.copy(permissionDenied = false)
-            val started = engine.start()
+            val started = VoiceEngineHolder.start()
             if (!started) {
                 _uiState.value = _uiState.value.copy(permissionDenied = true)
             }
         }
     }
 
-    fun selectPreset(preset: VoicePreset) {
-        engine.engine.preset = preset
-        _uiState.value = _uiState.value.copy(selectedPreset = preset)
-    }
+    fun selectPreset(preset: VoicePreset) = VoiceEngineHolder.selectPreset(preset)
 
-    fun setExtraPitch(semitones: Float) {
-        engine.engine.extraPitchSemitones = semitones
-        _uiState.value = _uiState.value.copy(extraPitchSemitones = semitones)
-    }
+    fun setExtraPitch(semitones: Float) = VoiceEngineHolder.setExtraPitch(semitones)
 
-    fun setWetDryMix(mix: Float) {
-        engine.engine.wetDryMix = mix
-        _uiState.value = _uiState.value.copy(wetDryMix = mix)
-    }
+    fun setWetDryMix(mix: Float) = VoiceEngineHolder.setWetDryMix(mix)
 
-    fun setOutputGain(gain: Float) {
-        engine.engine.outputGain = gain
-        _uiState.value = _uiState.value.copy(outputGain = gain)
-    }
+    fun setOutputGain(gain: Float) = VoiceEngineHolder.setOutputGain(gain)
 
     override fun onCleared() {
         super.onCleared()

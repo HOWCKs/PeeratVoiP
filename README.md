@@ -14,6 +14,10 @@ App Android (Kotlin + Jetpack Compose) para **transformar sua voz em tempo real*
   - Delay com feedback + reverb simples multi-tap para eco/salão.
 - **Design System Neumórfico** reutilizável em `ui/theme` e `ui/components`: `NeuCard`, `NeuButton`, `NeuIconButton`, `NeuInputField`, `NeuSlider`, `NeuToggle`, `NeuLevelMeter`, `NeuBottomNavBar`.
 
+- **Menu flutuante (overlay)**: uma bolha arrastável que fica por cima de qualquer app (estilo *buzmenow* / Samsung Sound Assistant). Toque para expandir um painel com carrossel de vozes (◀ ▶), ajuste de tom (− +) e liga/desliga — troque a voz sem sair do Discord/WhatsApp. Requer a permissão "Sobrepor a outros apps".
+- **Controles rápidos na notificação**: quando a voz ao vivo está ativa, uma notificação persistente traz atalhos para pausar/ativar e trocar de preset (anterior/próxima) direto da barra de notificações.
+- **Processar áudios (arquivos)**: na aba **Áudios**, escolha um arquivo (mp3/m4a/aac/ogg/wav), aplique a voz selecionada e reproduza/compartilhe/exclua o resultado — igual ao caso de uso do Sound Assistant com áudios recebidos. O resultado é salvo como WAV.
+
 ## ⚠️ Sobre "chamadas de voz ao vivo"
 
 O Android moderno **não permite** que apps de terceiros interceptem/modifiquem o áudio de uma **ligação telefônica da operadora** (GSM/VoLTE) — isso foi bloqueado por segurança/privacidade há vários anos, mesmo para apps como o Samsung Sound Assistant fora de dispositivos Samsung/condições especiais, e não é viável sem root.
@@ -32,8 +36,10 @@ app/src/main/java/com/peeratvoip/app/
 │   ├── VoicePreset.kt    # Definição dos personagens/tons
 │   ├── VoiceEffectEngine.kt   # Cadeia de efeitos (pipeline) aplicando um VoicePreset
 │   ├── LiveVoiceEngine.kt     # Captura AudioRecord -> engine -> AudioTrack em tempo real
-│   ├── LiveVoiceFxService.kt  # Foreground service (mantém o pipeline vivo em segundo plano)
-│   └── VoiceEngineHolder.kt   # Singleton do engine compartilhado entre telas
+│   ├── LiveVoiceFxService.kt  # Foreground service + controles rápidos na notificação
+│   ├── VoiceEngineHolder.kt   # Fonte única de verdade (engine + preset + tom) via StateFlow
+│   └── file/                  # AudioFileProcessor (MediaCodec) + WavIo (writer WAV)
+├── overlay/FloatingControlService.kt # Bolha/menu flutuante por cima de outros apps
 ├── data/SettingsRepository.kt # Preferências persistidas via DataStore
 └── ui/
     ├── theme/            # Paleta neumórfica + Modifier.neu() (sombra dupla)

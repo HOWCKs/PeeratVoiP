@@ -21,11 +21,13 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -48,6 +50,17 @@ fun LiveScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val palette = LocalNeuPalette.current
+    val context = LocalContext.current
+
+    // Keep the mic pipeline alive in the background (and show notification
+    // quick-controls) whenever the live effect is running.
+    LaunchedEffect(state.isRunning) {
+        if (state.isRunning) {
+            com.peeratvoip.app.audio.LiveVoiceFxService.start(context)
+        } else {
+            com.peeratvoip.app.audio.LiveVoiceFxService.stop(context)
+        }
+    }
 
     Column(
         modifier = Modifier
