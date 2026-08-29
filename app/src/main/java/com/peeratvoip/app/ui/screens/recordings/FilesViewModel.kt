@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.peeratvoip.app.audio.VoiceEngineHolder
+import com.peeratvoip.app.audio.VoiceRecorder
 import com.peeratvoip.app.audio.file.AudioFileProcessor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,18 +22,23 @@ data class ProcessedItem(
 data class FilesUiState(
     val processing: Boolean = false,
     val progress: Float = 0f,
+    val recording: Boolean = false,
+    val recordLevel: Float = 0f,
+    val recordElapsedMs: Long = 0L,
     val error: String? = null,
     val items: List<ProcessedItem> = emptyList(),
 )
 
 /**
- * Drives the "Áudios" screen: picks an audio file, runs it through the effect
- * engine using the currently selected preset/tuning and lists the results.
+ * Drives the "Áudios" screen: record a voice message with the current effect,
+ * OR pick an existing audio file and transform it — then list/play/share results.
  */
 class FilesViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _uiState = MutableStateFlow(FilesUiState())
     val uiState: StateFlow<FilesUiState> = _uiState.asStateFlow()
+
+    private val recorder = VoiceRecorder()
 
     private val outputDir: File by lazy {
         File(getApplication<Application>().filesDir, "processed").apply { mkdirs() }
@@ -40,6 +46,15 @@ class FilesViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         refresh()
+        viewModelScope.launch {
+            recorder.isRecording.collect { r -> _uiState.value = _uiState.value.copy(recording = r) }
+        }
+        viewModelScope.launch {
+            recorder.level.collect { l -> _uiState.value = _uiState.value.copy(recordLevel = l) }
+        }
+        viewModelScope.launch {
+            recorder.elapsedMs.collect { e -> _uiState.value = _uiState.value.copy(recordElapsedMs = e) }
+        }
     }
 
     fun refresh() {
@@ -49,6 +64,35 @@ class FilesViewModel(app: Application) : AndroidViewModel(app) {
             ?.map { ProcessedItem(it, prettyPresetFromName(it.name), 0L) }
             ?: emptyList()
         _uiState.value = _uiState.value.copy(items = items)
+    }
+
+    /** Starts recording the mic with the currently selected voice effect. */
+    fun toggleRecording(hasPermission: Boolean, requestPermission: () -> Unit): Boolean {
+        if (recorder.isRecording.value) {
+            recorder.stop()
+            refresh()
+            return false
+        }
+        if (!hasPermission) {
+            requestPermission()
+            return false
+        }
+        // The live engine and the recorder can't both own the mic.
+        if (VoiceEngineHolder.isRunning.value) VoiceEngineHolder.stop()
+
+        val preset = VoiceEngineHolder.preset.value
+        val out = File(outputDir, "rec_${preset.id}_${System.currentTimeMillis()}.wav")
+        val ok = recorder.start(
+            preset = preset,
+            extraPitchSemitones = VoiceEngineHolder.extraPitchSemitones.value,
+            wetDryMix = VoiceEngineHolder.wetDryMix.value,
+            outputGain = VoiceEngineHolder.outputGain.value,
+            file = out,
+        )
+        if (!ok) {
+            _uiState.value = _uiState.value.copy(error = "Não foi possível acessar o microfone")
+        }
+        return ok
     }
 
     fun processFile(uri: Uri) {
@@ -91,8 +135,14 @@ class FilesViewModel(app: Application) : AndroidViewModel(app) {
         refresh()
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        if (recorder.isRecording.value) recorder.stop()
+    }
+
     private fun prettyPresetFromName(name: String): String {
-        val id = name.substringBefore('_')
+        val core = name.removePrefix("rec_")
+        val id = core.substringBefore('_')
         return com.peeratvoip.app.audio.VoicePreset.builtIns
             .firstOrNull { it.id == id }
             ?.let { "${it.emoji} ${it.name}" } ?: "Áudio"

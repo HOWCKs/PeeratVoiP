@@ -53,12 +53,17 @@ fun LiveScreen(
     val context = LocalContext.current
 
     // Keep the mic pipeline alive in the background (and show notification
-    // quick-controls) whenever the live effect is running.
+    // quick-controls) whenever the live effect is running. Also pop the floating
+    // overlay bubble automatically so the voice can be changed over other apps.
     LaunchedEffect(state.isRunning) {
         if (state.isRunning) {
             com.peeratvoip.app.audio.LiveVoiceFxService.start(context)
+            if (com.peeratvoip.app.overlay.FloatingControlService.canDrawOverlays(context)) {
+                com.peeratvoip.app.overlay.FloatingControlService.show(context)
+            }
         } else {
             com.peeratvoip.app.audio.LiveVoiceFxService.stop(context)
+            com.peeratvoip.app.overlay.FloatingControlService.hide(context)
         }
     }
 

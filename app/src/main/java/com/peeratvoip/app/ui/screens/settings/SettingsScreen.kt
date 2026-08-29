@@ -149,10 +149,15 @@ fun SettingsScreen() {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Sobre", style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
                 Text(
-                    text = "PeeratVoiP transforma sua voz em tempo real com efeitos de personagem. " +
-                        "Por limitações de segurança do Android, não é possível modificar o áudio de " +
-                        "ligações telefônicas de operadora — use o modo Ao vivo com fones para chamadas " +
-                        "de voz por apps de VoIP que usam o microfone do sistema.",
+                    text = "PeeratVoiP transforma sua voz com efeitos de personagem.\n\n" +
+                        "• Ao vivo: ouça sua voz transformada em tempo real (use fones).\n" +
+                        "• Áudios: grave uma mensagem já com o efeito, ou transforme um " +
+                        "arquivo, e compartilhe no WhatsApp/Telegram/Discord.\n\n" +
+                        "Importante: o Android NÃO permite que apps de terceiros injetem a voz " +
+                        "modificada no microfone de chamadas ao vivo de outros apps (Discord, " +
+                        "WhatsApp) nem em ligações da operadora. Isso só é possível em apps de " +
+                        "sistema (como o Samsung Sound Assistant) ou com root (microfone virtual). " +
+                        "Para chamadas, o caminho que funciona sem root é gravar e enviar áudios.",
                     style = MaterialTheme.typography.bodySmall,
                     color = palette.textSecondary,
                 )

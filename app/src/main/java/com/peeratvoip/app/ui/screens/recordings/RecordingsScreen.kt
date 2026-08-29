@@ -1,9 +1,12 @@
 package com.peeratvoip.app.ui.screens.recordings
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,7 +22,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Stop
@@ -46,9 +51,11 @@ import com.peeratvoip.app.ui.components.NeuButtonText
 import com.peeratvoip.app.ui.components.NeuCard
 import com.peeratvoip.app.ui.components.NeuIconBadge
 import com.peeratvoip.app.ui.components.NeuIconButton
+import com.peeratvoip.app.ui.components.NeuLevelMeter
 import com.peeratvoip.app.ui.components.NeuSlider
 import com.peeratvoip.app.ui.theme.LocalNeuPalette
 import com.peeratvoip.app.ui.theme.PeeratVoipTheme
+import java.util.Locale
 
 /**
  * "Áudios" — pick an audio file, transform it with the currently selected voice
@@ -65,6 +72,14 @@ fun RecordingsScreen(viewModel: FilesViewModel = viewModel()) {
     val picker = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent(),
     ) { uri -> if (uri != null) viewModel.processFile(uri) }
+
+    fun hasMicPermission() = ContextCompat.checkSelfPermission(
+        context, Manifest.permission.RECORD_AUDIO,
+    ) == PackageManager.PERMISSION_GRANTED
+
+    val micPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted -> if (granted) viewModel.toggleRecording(true) {} }
 
     val player = remember { MediaPlayer() }
     var playingPath by remember { mutableStateOf<String?>(null) }
@@ -101,10 +116,63 @@ fun RecordingsScreen(viewModel: FilesViewModel = viewModel()) {
             fontWeight = FontWeight.Bold,
         )
         Text(
-            text = "Transforme um áudio existente com a voz selecionada.",
+            text = "Grave sua voz com o efeito ou transforme um áudio existente.",
             style = MaterialTheme.typography.bodyMedium,
             color = palette.textSecondary,
         )
+
+        // --- Record card: mic -> effect -> WAV (send as a voice message) ---
+        NeuCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    NeuIconBadge(icon = Icons.Filled.Mic, contentDescription = null, size = 44.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text("Gravar mensagem de voz", style = MaterialTheme.typography.titleMedium, color = palette.textPrimary)
+                        Text(
+                            "com ${activePreset.emoji} ${activePreset.name}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = palette.accent,
+                        )
+                    }
+                }
+
+                NeuLevelMeter(level = state.recordLevel, modifier = Modifier.fillMaxWidth())
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = formatElapsed(state.recordElapsedMs),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (state.recording) palette.danger else palette.textSecondary,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    NeuIconButton(
+                        icon = if (state.recording) Icons.Filled.Stop else Icons.Filled.FiberManualRecord,
+                        contentDescription = if (state.recording) "Parar gravação" else "Gravar",
+                        onClick = {
+                            if (state.recording) {
+                                viewModel.toggleRecording(true) {}
+                            } else if (hasMicPermission()) {
+                                viewModel.toggleRecording(true) {}
+                            } else {
+                                micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                            }
+                        },
+                        size = 64.dp,
+                        accent = true,
+                    )
+                }
+                Text(
+                    "Depois toque em compartilhar para enviar no WhatsApp, Telegram, etc.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = palette.textDisabled,
+                )
+            }
+        }
 
         NeuCard(modifier = Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -248,6 +316,13 @@ fun RecordingsScreen(viewModel: FilesViewModel = viewModel()) {
             }
         }
     }
+}
+
+private fun formatElapsed(ms: Long): String {
+    val totalSec = ms / 1000
+    val m = totalSec / 60
+    val s = totalSec % 60
+    return String.format(Locale.US, "%02d:%02d", m, s)
 }
 
 @androidx.compose.ui.tooling.preview.Preview(showBackground = true)
